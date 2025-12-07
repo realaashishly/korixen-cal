@@ -2,14 +2,6 @@
 import {
   createDefaultUserAssets,
   getUserAssets,
-  updateUserAssets,
-  getEvents,
-  createEvent,
-  updateEvent,
-  deleteEvent,
-  getSubscriptions,
-  createSubscription,
-  deleteSubscription,
   updateUserPreferences,
 } from "@/app/actions";
 import {
@@ -36,46 +28,30 @@ import React, {
 } from "react";
 import useUser from "./useUser";
 
-export interface AppContextType {
+interface AppContextType {
   appState: AppState;
   setAppState: React.Dispatch<React.SetStateAction<AppState>>;
-  user: typeof authClient.$Infer.Session.user | null;
   toastMsg: string | null;
   showToast: (msg: string) => void;
   isDarkMode: boolean;
   toggleTheme: () => void;
   isCelebrating: boolean;
   setIsCelebrating: React.Dispatch<React.SetStateAction<boolean>>;
-  
-  // Data
-  resources: ResourceItem[];
-  departments: string[];
-  eventTypes: string[];
-  resourceCategories: string[];
-  events: CalendarEvent[];
-  subscriptions: Subscription[];
-
-  // Actions
   seedDataByRole: (role: UserRole) => void;
   handleAddResource: (resource: ResourceItem) => void;
   handleRemoveResource: (resourceId: string) => void;
   handleDeleteAccount: () => void;
-  
-  // Event & Subscription Actions
-  handleCreateEvent: (event: Partial<CalendarEvent>) => Promise<void>;
-  handleUpdateEvent: (id: string, event: Partial<CalendarEvent>) => Promise<void>;
-  handleDeleteEvent: (id: string) => Promise<void>;
-  handleCreateSubscription: (sub: Partial<Subscription>) => Promise<void>;
-  handleDeleteSubscription: (id: string) => Promise<void>;
-
+  resources: ResourceItem[];
+  departments: string[];
+  eventTypes: string[];
+  resourceCategories: string[];
   isModalOpen: boolean;
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setResourceCategories: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-const AppContextContext = createContext<AppContextType | undefined>(undefined);
+const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const seedDataByRoleHelper = (role: UserRole) => {
+const seedDataByRole = (role: UserRole) => {
   const events: CalendarEvent[] = [];
   const subscriptions: Subscription[] = [];
 
@@ -305,7 +281,7 @@ const seedDataByRoleHelper = (role: UserRole) => {
   return { events, subscriptions };
 };
 
-export default function AppProvider({
+export default function AppContextSample({
   children,
 }: {
   children: ReactNode;
@@ -321,24 +297,21 @@ export default function AppProvider({
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isCelebrating, setIsCelebrating] = useState(false);
 
-  // Data State
   const [resources, setResources] = useState<ResourceItem[]>(INITIAL_RESOURCES);
+
   const [departments, setDepartments] = useState<string[]>(DEFAULT_DEPARTMENTS);
+
   const [eventTypes, setEventTypes] = useState<string[]>(DEFAULT_EVENT_TYPES);
+
   const [resourceCategories, setResourceCategories] = useState<string[]>(
     DEFAULT_RESOURCE_CATEGORIES
   );
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- Initialization ---
-
-  // Check Onboarding
-  const updateUserAssetsOnOnboarding = async () => {
-    // Create default assets if not exists
-    await createDefaultUserAssets();
+  const updateUserAssets = async () => {
+    const assets = await createDefaultUserAssets();
+    console.log("Assets:", assets);
   };
 
   useEffect(() => {
@@ -368,43 +341,10 @@ export default function AppProvider({
         pathname === "/signup" ||
         pathname === "/onboarding")
     ) {
-      updateUserAssetsOnOnboarding();
+      updateUserAssets();
       router.replace("/dashboard");
     }
   }, [user, isPending, pathname, router]);
-
-  // Load Data
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user) return;
-      try {
-        // Load Assets
-        const assets = await getUserAssets();
-        if (assets) {
-          if (assets.resources) setResources(assets.resources);
-          if (assets.departments) setDepartments(assets.departments);
-          if (assets.eventTypes) setEventTypes(assets.eventTypes);
-          if (assets.resourceCategories) setResourceCategories(assets.resourceCategories);
-        }
-
-        // Load Events
-        const loadedEvents = await getEvents();
-        setEvents(loadedEvents as unknown as CalendarEvent[]);
-
-        // Load Subscriptions
-        const loadedSubs = await getSubscriptions();
-        setSubscriptions(loadedSubs as unknown as Subscription[]);
-
-      } catch (error) {
-        console.error("Failed to load data", error);
-      }
-    };
-
-    if (user && appState === "app") {
-      loadData();
-    }
-  }, [user, appState]);
-
 
   useEffect(() => {
     if (isDarkMode) {
@@ -423,39 +363,30 @@ export default function AppProvider({
     setIsDarkMode((prev) => !prev);
   };
 
-  // --- Actions ---
-
-  const seedDataByRole = async (role: UserRole) => {
-    const { events: seededEvents, subscriptions: seededSubs } = seedDataByRoleHelper(role);
-    
-    // Save to DB
-    for (const ev of seededEvents) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, ...evData } = ev; 
-        await handleCreateEvent(evData);
-    }
-    for (const sub of seededSubs) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, ...subData } = sub;
-        await handleCreateSubscription(subData);
-    }
-  };
+  if (appState === "auth" && pathname !== "/signup" && pathname !== "/signin") {
+    return null;
+  }
 
   const handleAddResource = async (item: ResourceItem) => {
+    const { user } = useUser();
+    const userEmail = user?.email;
     // Global resource
     const newResources = [item, ...resources];
     setResources(newResources);
-    
-    // Update DB
-    await updateUserAssets({ resources: newResources });
+    if (userEmail) {
+      updateUserPreferences({ resources: newResources });
+    }
     showToast("Resource added");
   };
 
-  const handleRemoveResource = async (id: string) => {
+  const handleRemoveResource = (id: string) => {
+    const { user } = useUser();
+    const userEmail = user?.email;
     const newResources = resources.filter((r) => r.id !== id);
     setResources(newResources);
-    
-    await updateUserAssets({ resources: newResources });
+    if (userEmail) {
+      updateUserPreferences({ resources: newResources });
+    }
     showToast("Resource removed");
   };
 
@@ -466,101 +397,27 @@ export default function AppProvider({
     }
   };
 
-  // Event Handlers
-  const handleCreateEvent = async (eventData: Partial<CalendarEvent>) => {
-      try {
-        const newEvent = await createEvent(eventData);
-        setEvents((prev) => [...prev, newEvent as unknown as CalendarEvent]);
-        showToast("Event created");
-      } catch (err) {
-        console.error(err);
-        showToast("Failed to create event");
-      }
-  };
-
-  const handleUpdateEvent = async (id: string, eventData: Partial<CalendarEvent>) => {
-      try {
-        const updated = await updateEvent(id, eventData);
-        setEvents((prev) => prev.map(e => e.id === id ? (updated as unknown as CalendarEvent) : e));
-        showToast("Event updated");
-      } catch (err) {
-        console.error(err);
-        showToast("Failed to update event");
-      }
-  };
-
-  const handleDeleteEvent = async (id: string) => {
-      try {
-        await deleteEvent(id);
-        setEvents((prev) => prev.filter(e => e.id !== id));
-        showToast("Event deleted");
-      } catch (err) {
-        console.error(err);
-        showToast("Failed to delete event");
-      }
-  };
-
-  // Subscription Handlers
-  const handleCreateSubscription = async (sub: Partial<Subscription>) => {
-      try {
-        const newSub = await createSubscription(sub);
-        setSubscriptions((prev) => [...prev, newSub as unknown as Subscription]);
-        showToast("Subscription added");
-      } catch (err) {
-          console.error(err);
-          showToast("Failed to add subscription");
-      }
-  };
-
-  const handleDeleteSubscription = async (id: string) => {
-      try {
-        await deleteSubscription(id);
-        setSubscriptions((prev) => prev.filter(s => s.id !== id));
-        showToast("Subscription removed");
-      } catch (err) {
-          console.error(err);
-          showToast("Failed to remove subscription");
-      }
-  };
-
-  if (appState === "auth" && pathname !== "/signup" && pathname !== "/signin") {
-    return null;
-  }
-
   return (
-    <AppContextContext.Provider
+    <AppContext.Provider
       value={{
         appState,
         setAppState,
-        user: user || null,
         toastMsg,
         showToast,
         isDarkMode,
         toggleTheme,
         isCelebrating,
         setIsCelebrating,
-        
-        resources,
-        departments,
-        eventTypes,
-        resourceCategories,
-        events,
-        subscriptions,
-
-        isModalOpen,
-        setIsModalOpen,
-        setResourceCategories,
-
         handleAddResource,
         handleRemoveResource,
         handleDeleteAccount,
         seedDataByRole,
-        
-        handleCreateEvent,
-        handleUpdateEvent,
-        handleDeleteEvent,
-        handleCreateSubscription,
-        handleDeleteSubscription,
+        resources,
+        departments,
+        eventTypes,
+        resourceCategories,
+        isModalOpen,
+        setIsModalOpen,
       }}
     >
       {appState === "loading" && (
@@ -575,12 +432,12 @@ export default function AppProvider({
       )}
 
       {children}
-    </AppContextContext.Provider>
+    </AppContext.Provider>
   );
 }
 
 export const useApp = () => {
-  const context = useContext(AppContextContext);
+  const context = useContext(AppContext);
   if (context === undefined) {
     throw new Error("useApp must be used within an AppProvider");
   }

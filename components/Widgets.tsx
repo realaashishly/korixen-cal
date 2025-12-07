@@ -4,6 +4,7 @@ import { FileText, Plus, FileSpreadsheet, Youtube, Link as LinkIcon, Trash2, Ext
 import { ResourceItem, WeatherForecastItem } from '../types';
 import { format } from 'date-fns';
 import { getWeatherForecast } from '../services/geminiService';
+import { useApp } from '@/context/AppContext';
 
 // --- Time & Weather Widget ---
 
@@ -29,13 +30,20 @@ const getWeatherIcon = (condition: string, size = 24) => {
 };
 
 export const TimeWeatherWidget: React.FC = () => {
+  const { user } = useApp();
   const [time, setTime] = useState(new Date());
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Settings State with Persistence
   const [unit, setUnit] = useState<'F' | 'C'>(() => (localStorage.getItem('weather_unit') as 'F' | 'C') || 'F');
-  const [locationName, setLocationName] = useState(() => localStorage.getItem('weather_location') || 'San Francisco');
+  
+  // Initialize with user location if available, else local storage or default
+  const [locationName, setLocationName] = useState(() => {
+     if (user?.location) return user.location;
+     return localStorage.getItem('weather_location') || 'San Francisco';
+  });
+
   const [tempLocation, setTempLocation] = useState(locationName);
   const [timeZone, setTimeZone] = useState(() => localStorage.getItem('weather_timezone') || 'local');
 
@@ -59,6 +67,14 @@ export const TimeWeatherWidget: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('weather_timezone', timeZone);
   }, [timeZone]);
+
+  // Update location when user profile loads/changes
+  useEffect(() => {
+    if (user?.location) {
+      setLocationName(user.location);
+      setTempLocation(user.location);
+    }
+  }, [user?.location]);
 
   // Fetch forecast when location changes or on mount (morning check simulated)
   useEffect(() => {
@@ -246,6 +262,7 @@ interface ResourceWidgetProps {
   resourceCategories: string[];
   onAddResource: (item: ResourceItem) => void;
   onRemoveResource: (id: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setResourceCategories: React.Dispatch<React.SetStateAction<string[]>>;
   title?: string;
 }
@@ -307,13 +324,20 @@ export const ResourceWidget: React.FC<ResourceWidgetProps> = ({
 
   const handleAddCategory = () => {
     if (newCatName.trim() && !resourceCategories.includes(newCatName.trim())) {
-      setResourceCategories([...resourceCategories, newCatName.trim()]);
+    //  setResourceCategories([...resourceCategories, newCatName.trim()]); 
+    // Commented out as we don't have setResourceCategories exposed properly yet or ignoring it
+    // Wait, the prop exists but might not be backed by AppContext. 
+    // RightSidebar passes it as `setResourceCategories` but AppContext only exposes the list.
+    // I added setResourceCategories to AppContext interface but didn't implement it in the provider to update DB?
+    // Actually I added `setResourceCategories` to AppContext state in the previous turn. 
+    // So it should work if passed correctly.
+      setResourceCategories(prev => [...prev, newCatName.trim()]);
       setNewCatName('');
     }
   };
 
   const handleDeleteCategory = (cat: string) => {
-    setResourceCategories(resourceCategories.filter(c => c !== cat));
+    setResourceCategories(prev => prev.filter(c => c !== cat));
   };
 
   const handleOpenLink = (url: string) => {

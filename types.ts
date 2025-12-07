@@ -3,11 +3,16 @@ export type EventType = string;
 
 export type Department = string;
 
+export type AppState = "loading" | "auth" | "onboarding" | "building" | "app";
+
 export type TaskStatus = 'todo' | 'in-progress' | 'completed';
 
 export type Recurrence = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export type UserRole = 'Student' | 'Professional' | 'Entrepreneur' | 'Other';
+
+export type CalendarViewMode = "day" | "week" | "kanban";
+export type ActiveView = "calendar" | "subscriptions" | "settings" | "pricing";
 
 export interface CalendarEvent {
   id: string;

@@ -84,25 +84,21 @@ const MOCK_SUBSCRIPTIONS: Subscription[] = [
   }
 ];
 
-const SubscriptionTracker: React.FC = () => {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(() => {
-    const saved = localStorage.getItem('chronos_subscriptions');
-    if (saved) {
-      return JSON.parse(saved).map((s: any) => ({
-        ...s,
-        startDate: new Date(s.startDate),
-        endDate: s.endDate ? new Date(s.endDate) : undefined
-      }));
-    }
-    return MOCK_SUBSCRIPTIONS;
-  });
+interface SubscriptionTrackerProps {
+  subscriptions: Subscription[];
+  onAddSubscription: (sub: Subscription) => Promise<void>;
+  onDeleteSubscription: (id: string) => Promise<void>;
+}
+
+const SubscriptionTracker: React.FC<SubscriptionTrackerProps> = ({ 
+  subscriptions, 
+  onAddSubscription, 
+  onDeleteSubscription 
+}) => {
+  // Removed local storage state
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<SubscriptionType | 'all'>('all');
-
-  useEffect(() => {
-    localStorage.setItem('chronos_subscriptions', JSON.stringify(subscriptions));
-  }, [subscriptions]);
 
   // Form State
   const [newName, setNewName] = useState('');
@@ -137,10 +133,10 @@ const SubscriptionTracker: React.FC = () => {
 
   const yearlyTotal = monthlyTotal * 12;
 
-  const handleAddSubscription = (e: React.FormEvent) => {
+  const handleAddSubscription = async (e: React.FormEvent) => {
     e.preventDefault();
     const newSub: Subscription = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substr(2, 9), // Temp ID, backend will assign real one
       name: newName,
       price: parseFloat(newPrice),
       currency: '$',
@@ -154,13 +150,13 @@ const SubscriptionTracker: React.FC = () => {
       icon: newIcon
     };
 
-    setSubscriptions([...subscriptions, newSub]);
+    await onAddSubscription(newSub);
     setIsModalOpen(false);
     resetForm();
   };
 
-  const deleteSubscription = (id: string) => {
-    setSubscriptions(subscriptions.filter(s => s.id !== id));
+  const handleDeleteSubscription = async (id: string) => {
+    await onDeleteSubscription(id);
   };
 
   const resetForm = () => {
@@ -349,7 +345,7 @@ const SubscriptionTracker: React.FC = () => {
                      {/* Actions */}
                      <div className="w-10 flex items-center justify-end">
                         <button 
-                           onClick={() => deleteSubscription(sub.id)}
+                           onClick={() => handleDeleteSubscription(sub.id)}
                            className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
                         >
                            <Trash2 size={16} />
