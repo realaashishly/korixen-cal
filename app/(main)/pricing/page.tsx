@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { differenceInDays } from 'date-fns';
-import { Crown, Zap, ShieldCheck, Quote, ArrowRight, X, Gift } from 'lucide-react';
+import { Crown, Zap, ShieldCheck, Quote, ArrowRight, X, Gift, Check } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 
 import { authClient } from '@/lib/auth-client';
