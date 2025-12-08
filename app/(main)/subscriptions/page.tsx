@@ -37,8 +37,8 @@ export default function SubscriptionsPage() {
       
       const newSub = await createSubscription({
         ...sub,
-        startDate: sub.startDate.toISOString(),
-        endDate: sub.endDate?.toISOString()
+        startDate: sub.startDate,
+        endDate: sub.endDate
       });
 
       // Update with real ID from server
