@@ -7,6 +7,7 @@ export interface ISubscription extends Document {
   currency: string;
   billingCycle: string;
   startDate: Date;
+  endDate?: Date;
   type: string;
   isActive: boolean;
   color: string;
@@ -23,6 +24,7 @@ const SubscriptionSchema: Schema = new Schema(
     currency: { type: String, default: '$' },
     billingCycle: { type: String, default: 'monthly' },
     startDate: { type: Date, required: true },
+    endDate: { type: Date },
     type: { type: String, default: 'other' },
     isActive: { type: Boolean, default: true },
     color: { type: String, default: '#000000' },

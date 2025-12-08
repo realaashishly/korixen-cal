@@ -276,6 +276,7 @@ export async function getSubscriptions() {
     _id: sub._id.toString(),
     userId: sub.userId.toString(),
     startDate: sub.startDate.toISOString(),
+    endDate: sub.endDate?.toISOString(),
     createdAt: sub.createdAt.toISOString(),
     updatedAt: sub.updatedAt.toISOString(),
     id: sub._id.toString(),
@@ -294,6 +295,7 @@ export async function createSubscription(subData: Partial<SubType>) {
     userId: user._id,
     ...subData,
     startDate: new Date(subData.startDate!),
+    endDate: subData.endDate ? new Date(subData.endDate) : undefined,
   });
 
   return {
@@ -301,6 +303,7 @@ export async function createSubscription(subData: Partial<SubType>) {
     _id: newSub._id.toString(),
     userId: newSub.userId.toString(),
     startDate: newSub.startDate.toISOString(),
+    endDate: newSub.endDate?.toISOString(),
     createdAt: newSub.createdAt.toISOString(),
     updatedAt: newSub.updatedAt.toISOString(),
     id: newSub._id.toString(),
