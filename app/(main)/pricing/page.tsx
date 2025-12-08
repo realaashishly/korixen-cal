@@ -5,15 +5,17 @@ import { differenceInDays } from 'date-fns';
 import { Crown, Zap, ShieldCheck, Quote, ArrowRight, X, Gift } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 
+import { authClient } from '@/lib/auth-client';
+
 export default function PricingPage() {
   const {
-    isUpgraded,
-    setIsUpgraded,
-    trialStartDate,
-    setTrialStartDate,
+    user,
     setIsCelebrating,
-    userEmail
+    // userEmail - not needed if we have user
   } = useApp();
+
+  const isUpgraded = user?.isUpgraded ?? false;
+  const trialStartDate = user?.trialStartDate ? new Date(user.trialStartDate) : null;
 
   const [couponCode, setCouponCode] = React.useState("");
   const [toastMsg, setToastMsg] = React.useState<string | null>(null);
@@ -25,40 +27,37 @@ export default function PricingPage() {
 
   const handleRedeemCoupon = async () => {
     if (couponCode.toUpperCase() === "FAIZ25") {
-      // Optimistic update
-      setTrialStartDate(new Date()); 
+      await authClient.updateUser({
+        trialStartDate: new Date(),
+        couponRedeemed: true
+      });
       setIsCelebrating(true);
       showToast("Coupon Redeemed! 30 Days Free Trial Active.");
       setTimeout(() => setIsCelebrating(false), 5000);
-      
-      // Persist
-      // if (userEmail) await updateUser({ couponRedeemed: true });
     } else {
       showToast("Invalid Coupon Code");
     }
   };
 
   const handleBuy = async () => {
-    setIsUpgraded(true);
+    await authClient.updateUser({
+        isUpgraded: true
+    });
     setIsCelebrating(true);
     showToast("Welcome to Premium!");
     setTimeout(() => setIsCelebrating(false), 5000);
-    
-    // Persist
-    // if (userEmail) await updateUser({ isUpgraded: true });
   };
 
   const handleCancelSubscription = async () => {
-    setIsUpgraded(false);
+    await authClient.updateUser({
+        isUpgraded: false
+    });
     showToast("Subscription Cancelled.");
-    
-    // Persist
-    // if (userEmail) await updateUser({ isUpgraded: false });
   };
 
   const getDaysRemaining = () => {
     if (!trialStartDate) return 7;
-    const isExtended = false; // TODO: Check couponRedeemed from DB/State if needed
+    const isExtended = user?.couponRedeemed ?? false;
     const trialLength = isExtended ? 30 : 7;
 
     const diff = differenceInDays(new Date(), trialStartDate);
