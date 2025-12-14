@@ -31,6 +31,7 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      maxPoolSize: 10, // Maintain up to 10 socket connections
     };
 
     cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {

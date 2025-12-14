@@ -33,6 +33,9 @@ const SubscriptionSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Index for fetching a user's subscriptions
+SubscriptionSchema.index({ userId: 1 });
+
 const Subscription: Model<ISubscription> =
   mongoose.models.Subscription ||
   mongoose.model<ISubscription>('Subscription', SubscriptionSchema);

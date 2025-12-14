@@ -170,13 +170,19 @@ export async function updateUserPreferences(data: {
 
 export async function getEvents() {
   const sessionUser = await getSessionUser();
-  if (!sessionUser) return [];
+  if (!sessionUser?.id) return [];
 
+  // Parallelize DB connection and query if possible, but connection is usually fast if cached
   await dbConnect();
-  const user = await User.findOne({ email: sessionUser.email });
-  if (!user) return [];
 
-  const events = await Event.find({ userId: user._id }).lean();
+  // Use sessionUser.id directly. Ensure it's valid.
+  // Assuming sessionUser.id matches the format stored in DB (string vs ObjectId)
+  // If stored as ObjectId in DB, we can just pass the string if using Mongoose, 
+  // but better to match exactly if needed. 
+  // However, Event model defines userId as ObjectId. Mongoose casts string to ObjectId automatically in find().
+  
+  const events = await Event.find({ userId: sessionUser.id }).lean();
+  
   return events.map((event) => ({
     ...event,
     _id: event._id.toString(),
@@ -185,20 +191,19 @@ export async function getEvents() {
     endTime: event.endTime?.toISOString(),
     createdAt: event.createdAt.toISOString(),
     updatedAt: event.updatedAt.toISOString(),
-    id: event._id.toString(), // Map _id to id for frontend
+    id: event._id.toString(),
   }));
 }
 
 export async function createEvent(eventData: Partial<CalendarEvent>) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser) throw new Error("Unauthorized");
+  if (!sessionUser?.id) throw new Error("Unauthorized");
 
   await dbConnect();
-  const user = await User.findOne({ email: sessionUser.email });
-  if (!user) throw new Error("User not found");
-
+  
+  // Directly use sessionUser.id
   const newEvent = await Event.create({
-    userId: user._id,
+    userId: sessionUser.id,
     ...eventData,
     startTime: new Date(eventData.startTime!),
     endTime: eventData.endTime ? new Date(eventData.endTime) : undefined,
@@ -221,7 +226,7 @@ export async function updateEvent(
   eventData: Partial<CalendarEvent>
 ) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser) throw new Error("Unauthorized");
+  if (!sessionUser?.id) throw new Error("Unauthorized");
 
   await dbConnect();
 
@@ -231,13 +236,14 @@ export async function updateEvent(
   if (update.endTime) update.endTime = new Date(update.endTime);
   delete update.id; // Don't update the id field if passed
 
-  // Ensure the event belongs to the user (optional but good for security, though we trust the ID for now)
-  // Ideally we should check if the event's userId matches the current user.
-
-  const event = await Event.findByIdAndUpdate(eventId, update, {
-    new: true,
-  }).lean();
-  if (!event) throw new Error("Event not found");
+  // Ensure the event belongs to the current user using session ID directly
+  const event = await Event.findOneAndUpdate(
+    { _id: eventId, userId: sessionUser.id },
+    { $set: update },
+    { new: true }
+  ).lean();
+  
+  if (!event) throw new Error("Event not found or unauthorized");
 
   return {
     ...event,
@@ -253,10 +259,14 @@ export async function updateEvent(
 
 export async function deleteEvent(eventId: string) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser) throw new Error("Unauthorized");
+  if (!sessionUser?.id) throw new Error("Unauthorized");
 
   await dbConnect();
-  await Event.findByIdAndDelete(eventId);
+
+  // Direct deletion using session ID
+  const result = await Event.findOneAndDelete({ _id: eventId, userId: sessionUser.id });
+  if (!result) throw new Error("Event not found or unauthorized");
+  
   return { success: true };
 }
 
@@ -264,13 +274,11 @@ export async function deleteEvent(eventId: string) {
 
 export async function getSubscriptions() {
   const sessionUser = await getSessionUser();
-  if (!sessionUser) return [];
+  if (!sessionUser?.id) return [];
 
   await dbConnect();
-  const user = await User.findOne({ email: sessionUser.email });
-  if (!user) return [];
-
-  const subs = await Subscription.find({ userId: user._id }).lean();
+  
+  const subs = await Subscription.find({ userId: sessionUser.id }).lean();
   return subs.map((sub) => ({
     ...sub,
     _id: sub._id.toString(),
@@ -285,14 +293,12 @@ export async function getSubscriptions() {
 
 export async function createSubscription(subData: Partial<SubType>) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser) throw new Error("Unauthorized");
+  if (!sessionUser?.id) throw new Error("Unauthorized");
 
   await dbConnect();
-  const user = await User.findOne({ email: sessionUser.email });
-  if (!user) throw new Error("User not found");
 
   const newSub = await Subscription.create({
-    userId: user._id,
+    userId: sessionUser.id,
     ...subData,
     startDate: new Date(subData.startDate!),
     endDate: subData.endDate ? new Date(subData.endDate) : undefined,
@@ -312,9 +318,12 @@ export async function createSubscription(subData: Partial<SubType>) {
 
 export async function deleteSubscription(subId: string) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser) throw new Error("Unauthorized");
+  if (!sessionUser?.id) throw new Error("Unauthorized");
 
   await dbConnect();
-  await Subscription.findByIdAndDelete(subId);
+
+  const result = await Subscription.findOneAndDelete({ _id: subId, userId: sessionUser.id });
+  if (!result) throw new Error("Subscription not found or unauthorized");
+
   return { success: true };
 }

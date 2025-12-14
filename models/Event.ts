@@ -49,6 +49,11 @@ const EventSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Index for fetching a user's events
+EventSchema.index({ userId: 1, startTime: 1 });
+// Index for sorting or simple lookups
+EventSchema.index({ userId: 1 });
+
 const Event: Model<IEvent> =
   mongoose.models.Event || mongoose.model<IEvent>('Event', EventSchema);
 
