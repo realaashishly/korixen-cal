@@ -14,12 +14,14 @@ interface EventModalProps {
   setDepartments: React.Dispatch<React.SetStateAction<string[]>>;
   setEventTypes: React.Dispatch<React.SetStateAction<string[]>>;
   setResourceCategories: React.Dispatch<React.SetStateAction<string[]>>;
+  event?: any; // CalendarEvent - Using any to avoid circular deps or complex type import for now
 }
 
 const EventModal: React.FC<EventModalProps> = ({ 
   isOpen, onClose, onSave, selectedDate, 
   departments, eventTypes, resourceCategories,
-  setDepartments, setEventTypes, setResourceCategories
+  setDepartments, setEventTypes, setResourceCategories,
+  event
 }) => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<EventType>(eventTypes[0] || 'meeting');
@@ -44,6 +46,38 @@ const EventModal: React.FC<EventModalProps> = ({
   const [editingTypes, setEditingTypes] = useState(false);
   const [editingCategories, setEditingCategories] = useState(false);
   const [newItemName, setNewItemName] = useState('');
+
+  React.useEffect(() => {
+    if (isOpen && event) {
+        setTitle(event.title || '');
+        setType(event.type || 'meeting');
+        setDepartment(event.department || 'General');
+        setStatus(event.status || 'todo');
+        setRecurrence(event.recurrence || 'none');
+        setDescription(event.description || '');
+        setResources(event.resources || []);
+        
+        if (event.startTime) {
+            const start = new Date(event.startTime);
+            setStartTime(start.toTimeString().slice(0, 5));
+        }
+        if (event.endTime) {
+            const end = new Date(event.endTime);
+            setEndTime(end.toTimeString().slice(0, 5));
+            setHasEndTime(true);
+        } else {
+             setHasEndTime(false);
+        }
+    } else if (isOpen && !event) {
+        // Reset defaults for new event
+        setTitle('');
+        setDescription('');
+        setResources([]);
+        setStatus('todo');
+        setRecurrence('none');
+        // Keep current time or defaults if desired, but clearing title is main thing
+    }
+  }, [isOpen, event]);
 
   if (!isOpen) return null;
 

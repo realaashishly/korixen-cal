@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   
   const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>("day");
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<Department | "All">("All");
@@ -76,35 +77,53 @@ export default function DashboardPage() {
   // --- Effects ---
   
 
+  // Static Holidays Map (MM-DD or YYYY-MM-DD)
+  const HOLIDAYS: Record<string, string[]> = {
+    '01-01': ['New Year\'s Day'],
+    '01-14': ['Makar Sankranti', 'Pongal'],
+    '01-26': ['Republic Day'],
+    '02-14': ['Valentine\'s Day'],
+    '03-08': ['International Women\'s Day'],
+    '03-14': ['Holi'], // 2025 date
+    '03-25': ['Holi'], // 2024 date
+    '04-09': ['Eid al-Fitr'], // Approx
+    '04-14': ['Dr. Ambedkar Jayanti'],
+    '05-01': ['Labour Day'],
+    '08-15': ['Independence Day'],
+    '09-05': ['Teachers\' Day'],
+    '10-02': ['Gandhi Jayanti'],
+    '10-20': ['Diwali'], // 2025 approx? Actually Diwali 2025 is Oct 20.
+    '11-01': ['Diwali'], // 2024
+    '12-25': ['Christmas Day'],
+  };
+
   // Fetch Holidays
   useEffect(() => {
-    const fetchHolidays = async () => {
+    const fetchHolidays = () => {
       setLoadingHolidays(true);
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const dateKey = format(selectedDate, 'MM-dd'); // Check recurring first
+      const fullDateKey = format(selectedDate, 'yyyy-MM-dd');
       
-      if (holidayCache.current.has(dateStr)) {
-          setHolidays(holidayCache.current.get(dateStr)!);
-          setLoadingHolidays(false);
-          return;
-      }
-
-      // Mock holidays logic (moved from AppContext)
-      // In a real app, this would be an API call
-      setTimeout(() => {
-          const mockHolidays = Math.random() > 0.7 ? ["Public Holiday"] : [];
-          holidayCache.current.set(dateStr, mockHolidays);
-          setHolidays(mockHolidays);
-          setLoadingHolidays(false);
-      }, 500);
+      const foundHolidays: string[] = [];
+      
+      if (HOLIDAYS[dateKey]) foundHolidays.push(...HOLIDAYS[dateKey]);
+      if (HOLIDAYS[fullDateKey]) foundHolidays.push(...HOLIDAYS[fullDateKey]);
+      
+      setHolidays(foundHolidays);
+      setLoadingHolidays(false);
     };
     
     fetchHolidays();
   }, [selectedDate]);
 
+  // Events Loading
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+
   // Fetch Events
   useEffect(() => {
     const fetchEvents = async () => {
       try {
+        setIsLoadingEvents(true);
         const data = await getEvents();
         setEvents(data.map(e => ({
           ...e,
@@ -117,6 +136,8 @@ export default function DashboardPage() {
         })));
       } catch (error) {
         console.error("Failed to fetch events", error);
+      } finally {
+        setIsLoadingEvents(false);
       }
     };
     fetchEvents();
@@ -162,31 +183,44 @@ export default function DashboardPage() {
 
   const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
     try {
-      // Optimistic
-      const tempId = Math.random().toString(36).substr(2, 9);
-      const newEvent: CalendarEvent = {
-        id: tempId,
-        title: eventData.title || "New Event",
-        startTime: eventData.startTime || new Date(),
-        endTime: eventData.endTime,
-        type: eventData.type || "task",
-        department: eventData.department || "General",
-        status: eventData.status || "todo",
-        resources: eventData.resources || [],
-        ...eventData,
-      } as CalendarEvent;
+      if (editingEvent) {
+          // Update existing
+          const updatedEvent = {
+              ...editingEvent,
+              ...eventData,
+          } as CalendarEvent;
+          
+          await handleUpdateEvent(updatedEvent);
+      } else {
+          // Create new
+          // Optimistic
+          const tempId = Math.random().toString(36).substr(2, 9);
+          const newEvent: CalendarEvent = {
+            id: tempId,
+            title: eventData.title || "New Event",
+            startTime: eventData.startTime || new Date(),
+            endTime: eventData.endTime,
+            type: eventData.type || "task",
+            department: eventData.department || "General",
+            status: eventData.status || "todo",
+            resources: eventData.resources || [],
+            ...eventData,
+          } as CalendarEvent;
 
-      updateEvents([...events, newEvent]);
+          updateEvents([...events, newEvent]);
+          setIsModalOpen(false);
+
+          const savedEvent = await createEvent({
+            ...newEvent,
+            startTime: newEvent.startTime,
+            endTime: newEvent.endTime
+          });
+
+          // Replace temp ID
+          setEvents(prev => prev.map(e => e.id === tempId ? { ...e, id: savedEvent.id } : e));
+      }
       setIsModalOpen(false);
-
-      const savedEvent = await createEvent({
-        ...newEvent,
-        startTime: newEvent.startTime,
-        endTime: newEvent.endTime
-      });
-
-      // Replace temp ID
-      setEvents(prev => prev.map(e => e.id === tempId ? { ...e, id: savedEvent.id } : e));
+      setEditingEvent(null);
 
     } catch (error) {
       console.error("Failed to save event", error);
@@ -250,6 +284,27 @@ export default function DashboardPage() {
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     setSelectedEventId(null);
+  };
+
+  const handleSelectEvent = (eventId: string | null) => {
+    if (!eventId) {
+        setSelectedEventId(null);
+        return;
+    }
+    // Loose check to support pre-existing data
+    const evt = events.find(e => String(e.id) === String(eventId));
+    if (evt) {
+        setIsModalOpen(true);
+        // We need a state for editing event. Let's add it if missing or assume we pass it to modal.
+        // Wait, I haven't added editingEvent state yet in this file. I need to do that above first.
+        // Actually I can do it in this replacement if I replace a large chunk or multiple chunks.
+        // But let's just use a ref or state. I'll add state in next step.
+        // For now I'll just set the ID and let the modal find it?
+        // No, EventModal needs the object.
+        // I will add setEditingEvent call here, and define state in another edit.
+        setEditingEvent(evt);
+    }
+    setSelectedEventId(eventId);
   };
 
   return (
@@ -451,43 +506,68 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex-1 relative overflow-visible lg:overflow-hidden flex flex-col">
-          {calendarViewMode === 'day' && (
+          {isLoadingEvents ? (
+             <div className="flex-1 p-4 lg:p-0 space-y-4 animate-pulse overflow-y-auto scrollbar-hide">
+                {[1, 2, 3].map((i) => (
+                   <div key={i} className="w-full h-32 bg-gray-100 dark:bg-zinc-800/50 rounded-[24px] border border-gray-100 dark:border-zinc-800/50 flex flex-col p-5 gap-3">
+                      <div className="flex justify-between">
+                         <div className="h-4 w-20 bg-gray-200 dark:bg-zinc-700/50 rounded-full"></div>
+                         <div className="h-4 w-4 bg-gray-200 dark:bg-zinc-700/50 rounded-full"></div>
+                      </div>
+                      <div className="h-6 w-3/4 bg-gray-200 dark:bg-zinc-700/50 rounded-md"></div>
+                      <div className="h-4 w-1/2 bg-gray-200 dark:bg-zinc-700/50 rounded-md"></div>
+                   </div>
+                ))}
+             </div>
+          ) : (
             <>
-              <DayView 
-                date={selectedDate} 
-                events={filteredEvents} 
-                onUpdateEvent={handleUpdateEvent}
-                onReorderEvents={handleReorderEvents}
-                onDeleteEvent={handleDeleteEvent}
-                onSelectEvent={setSelectedEventId}
-                selectedEventId={selectedEventId}
-              />
-              <div className="hidden lg:block absolute bottom-0 left-0 w-full h-24 bg-linear-to-t from-white dark:from-zinc-900 to-transparent pointer-events-none z-20"></div>
-            </>
-          )}
-          
-          {calendarViewMode === 'week' && (
-            <WeekView 
-              date={selectedDate} 
-              events={filteredEvents} 
-              onSelectDate={handleDateSelect}
-            />
-          )}
+              {calendarViewMode === 'day' && (
+                <>
+                  <DayView 
+                    date={selectedDate} 
+                    events={filteredEvents} 
+                    onUpdateEvent={handleUpdateEvent}
+                    onReorderEvents={handleReorderEvents}
+                    onDeleteEvent={handleDeleteEvent}
+                    onSelectEvent={handleSelectEvent}
+                    selectedEventId={selectedEventId}
+                  />
+                  <div className="hidden lg:block absolute bottom-0 left-0 w-full h-24 bg-linear-to-t from-white dark:from-zinc-900 to-transparent pointer-events-none z-20"></div>
+                </>
+              )}
+              
+              {calendarViewMode === 'week' && (
+                <WeekView 
+                  date={selectedDate} 
+                  events={filteredEvents} 
+                  onSelectDate={handleDateSelect}
+                />
+              )}
 
-          {calendarViewMode === 'kanban' && (
-            <KanbanView 
-              events={filteredEvents} 
-              departments={departments}
-              onEventUpdate={handleUpdateEvent}
-            />
+              {calendarViewMode === 'kanban' && (
+                <KanbanView 
+                  events={filteredEvents} 
+                  departments={departments}
+                  onEventUpdate={handleUpdateEvent}
+                  onSelectEvent={handleSelectEvent}
+                />
+              )}
+            </>
           )}
         </div>
       </div>
 
       <EventModal 
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveEvent}
+        onClose={() => {
+            setIsModalOpen(false);
+            setEditingEvent(null);
+            setSelectedEventId(null);
+        }}
+        onSave={(data) => {
+            handleSaveEvent(data);
+            setEditingEvent(null);
+        }}
         selectedDate={selectedDate}
         departments={departments}
         eventTypes={eventTypes}
@@ -495,6 +575,7 @@ export default function DashboardPage() {
         setDepartments={setDepartments}
         setEventTypes={setEventTypes}
         setResourceCategories={setResourceCategories}
+        event={editingEvent}
       />
     </>
   );

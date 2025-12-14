@@ -64,13 +64,8 @@ export default function SubscriptionsPage() {
     }
   };
 
-  if (loading) {
-      return (
-          <div className="flex items-center justify-center h-full">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
-          </div>
-      );
-  }
+  // Removed blocking loading state
+  // if (loading) return ...
 
   return (
     <>
@@ -99,6 +94,7 @@ export default function SubscriptionsPage() {
             subscriptions={subscriptions}
             onAddSubscription={handleAddSubscription}
             onDeleteSubscription={handleDeleteSubscription}
+            isLoading={loading}
         />
       </div>
     </>

@@ -66,9 +66,13 @@ export async function createDefaultUserAssets() {
     });
 
     return { success: true, id: newAssets._id.toString() };
-  } catch (error) {
+  } catch (error: any) {
+    // If error code 11000, it means assets already exist for this user, which is fine.
+    if (error.code === 11000) {
+      return { success: false };
+    }
+    
     console.error("Error creating user assets:", error);
-    // If error code 11000, it means assets already exist for this user
     return { success: false };
   }
 }

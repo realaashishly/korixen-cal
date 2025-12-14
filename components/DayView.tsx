@@ -12,7 +12,7 @@ interface DayViewProps {
   onUpdateEvent: (event: CalendarEvent) => void;
   onReorderEvents: (events: CalendarEvent[]) => void;
   onDeleteEvent: (eventId: string) => void;
-  onSelectEvent?: (eventId: string) => void;
+  onSelectEvent?: (eventId: string | null) => void;
   selectedEventId?: string | null;
 }
 

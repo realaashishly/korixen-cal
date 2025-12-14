@@ -13,6 +13,16 @@ const SigninPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  React.useEffect(() => {
+    const checkSession = async () => {
+        const { data } = await authClient.getSession();
+        if (data?.session) {
+            router.replace('/dashboard');
+        }
+    };
+    checkSession();
+  }, [router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);

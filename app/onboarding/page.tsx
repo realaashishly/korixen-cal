@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 
 const OnboardingPage: React.FC = () => {
-  const { setAppState } = useApp();
+  const { setAppState, seedDataByRole } = useApp();
   const router = useRouter();
 
   const [step, setStep] = useState(1);
@@ -41,6 +41,10 @@ const OnboardingPage: React.FC = () => {
         return;
       }
       setAppState("app");
+      
+      // Auto-generate example data based on role
+      await seedDataByRole(role);
+      
       router.replace("/dashboard");
     } catch (err) {
       console.error("Unexpected error:", err);

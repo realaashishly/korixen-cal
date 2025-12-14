@@ -42,58 +42,18 @@ const AVAILABLE_ICONS: { [key: string]: React.ElementType } = {
   CreditCard, Monitor, Tv, Zap, Home, Briefcase, Music, Smartphone, Gamepad, Coffee, Cloud, Shield, Key, Globe, Mail, ShoppingBag, Car, Wifi, Film, Dumbbell, Plane, Gift, Book, Camera, Heart
 };
 
-const MOCK_SUBSCRIPTIONS: Subscription[] = [
-  {
-    id: '1',
-    name: 'Netflix',
-    price: 15.99,
-    currency: '$',
-    billingCycle: 'monthly',
-    startDate: new Date('2023-01-15'),
-    type: 'entertainment',
-    isActive: true,
-    link: 'https://netflix.com',
-    color: '#E50914',
-    icon: 'Tv'
-  },
-  {
-    id: '2',
-    name: 'Figma Professional',
-    price: 144,
-    currency: '$',
-    billingCycle: 'yearly',
-    startDate: new Date('2023-06-01'),
-    type: 'software',
-    isActive: true,
-    link: 'https://figma.com',
-    color: '#0ACF83',
-    icon: 'Monitor'
-  },
-  {
-    id: '3',
-    name: 'Spotify',
-    price: 9.99,
-    currency: '$',
-    billingCycle: 'monthly',
-    startDate: new Date('2022-03-10'),
-    type: 'entertainment',
-    isActive: true,
-    link: 'https://spotify.com',
-    color: '#1DB954',
-    icon: 'Music'
-  }
-];
-
 interface SubscriptionTrackerProps {
   subscriptions: Subscription[];
   onAddSubscription: (sub: Subscription) => Promise<void>;
   onDeleteSubscription: (id: string) => Promise<void>;
+  isLoading?: boolean;
 }
 
 const SubscriptionTracker: React.FC<SubscriptionTrackerProps> = ({ 
   subscriptions, 
   onAddSubscription, 
-  onDeleteSubscription 
+  onDeleteSubscription,
+  isLoading = false
 }) => {
   // Removed local storage state
   
@@ -281,7 +241,21 @@ const SubscriptionTracker: React.FC<SubscriptionTrackerProps> = ({
 
       {/* Subscription List */}
       <div className="flex-1 overflow-visible lg:overflow-y-auto hide-scrollbar space-y-3 pb-20">
-         {filteredSubs.length === 0 ? (
+         {isLoading ? (
+            // Skeleton Loader
+            <div className="space-y-3 animate-pulse">
+               {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-white dark:bg-zinc-900 rounded-[24px] p-5 shadow-sm border border-gray-100 dark:border-zinc-800 flex items-center gap-5">
+                     <div className="w-14 h-14 rounded-2xl bg-gray-200 dark:bg-zinc-800 shrink-0"></div>
+                     <div className="flex-1 space-y-2">
+                        <div className="h-5 w-1/3 bg-gray-200 dark:bg-zinc-800 rounded-md"></div>
+                        <div className="h-4 w-1/4 bg-gray-200 dark:bg-zinc-800 rounded-md"></div>
+                     </div>
+                     <div className="w-20 h-8 bg-gray-200 dark:bg-zinc-800 rounded-md"></div>
+                  </div>
+               ))}
+            </div>
+         ) : filteredSubs.length === 0 ? (
            <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-gray-200 dark:border-zinc-800 rounded-[32px] opacity-60">
               <CreditCard size={48} className="text-gray-300 dark:text-zinc-700 mb-4" />
               <p className="font-bold text-gray-400 dark:text-zinc-600">No subscriptions found</p>

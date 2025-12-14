@@ -7,9 +7,10 @@ interface KanbanViewProps {
   events: CalendarEvent[];
   departments: Department[];
   onEventUpdate?: (event: CalendarEvent) => void;
+  onSelectEvent?: (eventId: string | null) => void;
 }
 
-const KanbanView: React.FC<KanbanViewProps> = ({ events, departments, onEventUpdate }) => {
+const KanbanView: React.FC<KanbanViewProps> = ({ events, departments, onEventUpdate, onSelectEvent }) => {
   
   const handleDragStart = (e: React.DragEvent, event: CalendarEvent) => {
     e.dataTransfer.setData('text/plain', event.id);
@@ -73,6 +74,7 @@ const KanbanView: React.FC<KanbanViewProps> = ({ events, departments, onEventUpd
                       key={evt.id} 
                       draggable={!!onEventUpdate}
                       onDragStart={(e) => handleDragStart(e, evt)}
+                      onClick={() => onSelectEvent && onSelectEvent(evt.id)}
                       className={`
                         bg-white dark:bg-zinc-800 p-4 rounded-[20px] shadow-sm border border-gray-100 dark:border-zinc-700 
                         hover:shadow-lg hover:-translate-y-1 transition-all cursor-move group relative

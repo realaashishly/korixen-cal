@@ -96,11 +96,11 @@ export default function PricingPage() {
       </div>
 
       {/* Panel B: Main Feed */}
-      <div className="flex-1 flex flex-col w-full lg:h-full bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl rounded-[40px] shadow-depth-2 px-4 py-6 lg:px-8 lg:py-8 overflow-visible lg:overflow-hidden relative z-10 animate-in zoom-in-95 duration-500 border border-white/50 dark:border-white/5">
-        <div className="flex flex-col h-full relative overflow-hidden">
+      <div className="flex-1 flex flex-col w-full lg:h-full bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl rounded-[40px] shadow-depth-2 px-4 py-6 lg:px-8 lg:py-8 overflow-visible lg:overflow-y-auto relative z-10 animate-in zoom-in-95 duration-500 border border-white/50 dark:border-white/5">
+        <div className="flex flex-col h-full relative">
             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(0,0,0,0.03),transparent_50%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.03),transparent_50%)]"></div>
             
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 lg:h-full gap-8">
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 lg:min-h-full gap-8">
                 {/* Left Side: Quotes & Value Prop */}
                 <div className="flex flex-col justify-center h-full space-y-8 pr-4">
                     <div className="space-y-4">
@@ -110,7 +110,7 @@ export default function PricingPage() {
                             {getDaysRemaining() > 0 ? 'Free Trial Started' : 'Trial Expired'}
                         </span>
                         </div>
-                        <h1 className="text-6xl font-display font-bold text-gray-900 dark:text-zinc-100 leading-tight">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-gray-900 dark:text-zinc-100 leading-tight">
                         {isUpgraded ? (
                             <>
                                 Thank you for <br/>
@@ -177,7 +177,7 @@ export default function PricingPage() {
                         </h2>
                         <div className="flex items-center justify-center gap-1 mt-4">
                         <span className="text-2xl font-bold text-gray-400">$</span>
-                        <span className="text-7xl font-display font-bold text-black dark:text-white tracking-tighter">3</span>
+                        <span className="text-5xl md:text-6xl lg:text-7xl font-display font-bold text-black dark:text-white tracking-tighter">3</span>
                         <span className="text-gray-400 font-medium self-end mb-2">/ month</span>
                         </div>
                     </div>
