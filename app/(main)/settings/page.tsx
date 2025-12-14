@@ -14,7 +14,7 @@ import { authClient } from '@/lib/auth-client';
 import { redirect, useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
-  const { user, isPending } = useUser();
+  const { user, isLoading } = useUser();
   const [userName, setUserName] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const router = useRouter();
@@ -22,7 +22,7 @@ export default function SettingsPage() {
   // ... existing code ...
 
   // Loading Skeleton
-  if (isPending) {
+  if (isLoading) {
      return (
         <div className="flex flex-col lg:flex-row h-full gap-8 animate-pulse p-4 lg:p-0">
            {/* Sidebar Skeleton */}
