@@ -173,8 +173,14 @@ export const getWeatherForecast = async (location: string, date: Date): Promise<
       return JSON.parse(response.text);
     }
     return [];
-  } catch (error) {
-    console.error("Error generating weather:", error);
+  } catch (error: any) {
+    // Handle 503 Overloaded specifically
+    if (error?.message?.includes('503') || error?.status === 503) {
+      console.warn("Weather Model Overloaded (503): Using fallback data.");
+    } else {
+      console.warn("Error generating weather:", error);
+    }
+    
     // Fallback data
     return Array.from({length: 24}, (_, i) => ({
       time: `${(new Date().getHours() + i) % 24}:00`,

@@ -89,7 +89,7 @@ export default function SubscriptionsPage() {
       </div>
 
       {/* Panel B: Main Feed */}
-      <div className="flex-1 flex flex-col w-full lg:h-full bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl rounded-[40px] shadow-depth-2 px-4 py-6 lg:px-8 lg:py-8 overflow-visible lg:overflow-hidden relative z-10 animate-in zoom-in-95 duration-500 border border-white/50 dark:border-white/5">
+      <div className="flex-1 flex flex-col w-full lg:min-h-screen bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl rounded-[40px] shadow-depth-2 px-4 py-6 lg:px-8 lg:py-8 overflow-visible lg:overflow-hidden relative z-10 animate-in zoom-in-95 duration-500 border border-white/50 dark:border-white/5">
         <SubscriptionTracker 
             subscriptions={subscriptions}
             onAddSubscription={handleAddSubscription}

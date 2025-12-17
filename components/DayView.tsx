@@ -82,10 +82,11 @@ const DayView: React.FC<DayViewProps> = ({
   }
 
   // Time Updates
-  const handleStartTimeChange = (evt: CalendarEvent, newTime: Date) => {
+  // Time Updates
+  const handleStartTimeChange = (evt: CalendarEvent, newStart: Date) => {
       // Preserve the date part, only update time
       const updatedDate = new Date(evt.startTime);
-      updatedDate.setHours(newTime.getHours(), newTime.getMinutes());
+      updatedDate.setHours(newStart.getHours(), newStart.getMinutes());
       onUpdateEvent({ ...evt, startTime: updatedDate });
   };
 

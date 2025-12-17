@@ -67,6 +67,7 @@ export interface AppContextType {
   handleDeleteEvent: (id: string) => Promise<void>;
   handleCreateSubscription: (sub: Partial<Subscription>) => Promise<void>;
   handleDeleteSubscription: (id: string) => Promise<void>;
+  handleUpdateResourceCategories: (categories: string[]) => Promise<void>;
 
   isModalOpen: boolean;
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -523,6 +524,16 @@ export default function AppProvider({
       }
   };
 
+  const handleUpdateResourceCategories = async (categories: string[]) => {
+      setResourceCategories(categories); // Optimistic
+      try {
+          await updateUserAssets({ resourceCategories: categories });
+      } catch (err) {
+          console.error(err);
+          showToast("Failed to save categories");
+      }
+  };
+
   if (appState === "auth" && pathname !== "/signup" && pathname !== "/signin") {
     return null;
   }
@@ -561,6 +572,7 @@ export default function AppProvider({
         handleDeleteEvent,
         handleCreateSubscription,
         handleDeleteSubscription,
+        handleUpdateResourceCategories,
       }}
     >
       {appState === "loading" && (

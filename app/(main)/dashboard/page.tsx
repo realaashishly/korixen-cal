@@ -230,6 +230,13 @@ export default function DashboardPage() {
 
   const handleUpdateEvent = async (updatedEvent: CalendarEvent) => {
     try {
+      // Prevent disappearing act: 
+      // If we are filtering by status, and the new status doesn't match the filter,
+      // switch filter to 'all' so the user can see their change.
+      if (selectedStatusFilter !== 'all' && updatedEvent.status !== selectedStatusFilter) {
+         setSelectedStatusFilter('all');
+      }
+
       updateEvents(events.map(e => e.id === updatedEvent.id ? updatedEvent : e));
       
       // Don't call server if it's a temp ID (it will be created by handleSaveEvent)
@@ -238,7 +245,8 @@ export default function DashboardPage() {
       await updateEvent(updatedEvent.id, {
         ...updatedEvent,
         startTime: updatedEvent.startTime,
-        endTime: updatedEvent.endTime
+        endTime: updatedEvent.endTime,
+        status: updatedEvent.status
       });
     } catch (error) {
       console.error("Failed to update event", error);

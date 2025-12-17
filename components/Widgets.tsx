@@ -262,8 +262,7 @@ interface ResourceWidgetProps {
   resourceCategories: string[];
   onAddResource: (item: ResourceItem) => void;
   onRemoveResource: (id: string) => void;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  setResourceCategories: React.Dispatch<React.SetStateAction<string[]>>;
+  onUpdateCategories: (categories: string[]) => void;
   title?: string;
 }
 
@@ -290,7 +289,7 @@ const getCategoryColor = (category: string) => {
 };
 
 export const ResourceWidget: React.FC<ResourceWidgetProps> = ({ 
-  resources, resourceCategories, onAddResource, onRemoveResource, setResourceCategories, title = "Project Hub" 
+  resources, resourceCategories, onAddResource, onRemoveResource, onUpdateCategories, title = "Project Hub" 
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [urlInput, setUrlInput] = useState('');
@@ -308,11 +307,17 @@ export const ResourceWidget: React.FC<ResourceWidgetProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!urlInput) return;
+    if (!urlInput.trim()) return;
+
+    let finalUrl = urlInput.trim();
+    // Ensure protocol exists
+    if (!/^https?:\/\//i.test(finalUrl)) {
+        finalUrl = `https://${finalUrl}`;
+    }
 
     onAddResource({
       id: Math.random().toString(36).substr(2, 9),
-      url: urlInput,
+      url: finalUrl,
       type: categoryInput,
       title: titleInput || 'Untitled Resource'
     });
@@ -324,25 +329,31 @@ export const ResourceWidget: React.FC<ResourceWidgetProps> = ({
 
   const handleAddCategory = () => {
     if (newCatName.trim() && !resourceCategories.includes(newCatName.trim())) {
-    //  setResourceCategories([...resourceCategories, newCatName.trim()]); 
-    // Commented out as we don't have setResourceCategories exposed properly yet or ignoring it
-    // Wait, the prop exists but might not be backed by AppContext. 
-    // RightSidebar passes it as `setResourceCategories` but AppContext only exposes the list.
-    // I added setResourceCategories to AppContext interface but didn't implement it in the provider to update DB?
-    // Actually I added `setResourceCategories` to AppContext state in the previous turn. 
-    // So it should work if passed correctly.
-      setResourceCategories(prev => [...prev, newCatName.trim()]);
+      onUpdateCategories([...resourceCategories, newCatName.trim()]);
       setNewCatName('');
     }
   };
 
   const handleDeleteCategory = (cat: string) => {
-    setResourceCategories(prev => prev.filter(c => c !== cat));
+    onUpdateCategories(resourceCategories.filter(c => c !== cat));
   };
 
   const handleOpenLink = (url: string) => {
-    window.open(url, '_blank');
+    try {
+        window.open(url, '_blank');
+    } catch {
+        // Fallback for weird URLs
+        console.warn("Could not open URL:", url);
+    }
   };
+
+  const getSafeHostname = (url: string) => {
+      try {
+          return new URL(url).hostname.replace('www.', '');
+      } catch {
+          return url; // Fallback to raw string if invalid
+      }
+  }
 
   return (
     <div className="flex-1 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md rounded-[32px] p-6 relative overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(255,255,255,0.6)] dark:shadow-none border border-white/60 dark:border-white/5 transition-all duration-300">
@@ -463,7 +474,7 @@ export const ResourceWidget: React.FC<ResourceWidgetProps> = ({
                            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md border border-gray-100 dark:border-zinc-700">
                                 {res.type}
                            </span>
-                           <span className="text-[10px] text-gray-300 dark:text-zinc-600 truncate max-w-[100px]">{new URL(res.url).hostname.replace('www.', '')}</span>
+                           <span className="text-[10px] text-gray-300 dark:text-zinc-600 truncate max-w-[100px]">{getSafeHostname(res.url)}</span>
                        </div>
                     </div>
 

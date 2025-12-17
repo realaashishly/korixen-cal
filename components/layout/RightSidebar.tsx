@@ -5,7 +5,7 @@ import { ResourceWidget, TimeWeatherWidget } from '../Widgets';
 import { useApp } from '@/context/AppContext';
 
 const RightSidebar: React.FC = () => {
-  const { resources, resourceCategories, setResourceCategories, setIsModalOpen, handleAddResource, handleRemoveResource } = useApp();
+  const { resources, resourceCategories, handleUpdateResourceCategories, handleAddResource, handleRemoveResource } = useApp();
 
   return (
     <div className="w-full lg:w-[340px] flex flex-col gap-6 lg:h-full shrink-0 animate-in slide-in-from-right-4 duration-500 fade-in delay-75">
@@ -15,7 +15,7 @@ const RightSidebar: React.FC = () => {
             title="Resource Hub"
             resources={resources}
             resourceCategories={resourceCategories}
-            setResourceCategories={setResourceCategories}
+            onUpdateCategories={handleUpdateResourceCategories}
             onAddResource={handleAddResource}
             onRemoveResource={handleRemoveResource}
           />
