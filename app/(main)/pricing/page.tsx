@@ -19,6 +19,7 @@ export default function PricingPage() {
 
   const [couponCode, setCouponCode] = React.useState("");
   const [toastMsg, setToastMsg] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -40,12 +41,17 @@ export default function PricingPage() {
   };
 
   const handleBuy = async () => {
-    await authClient.updateUser({
-        isUpgraded: true
-    });
-    setIsCelebrating(true);
-    showToast("Welcome to Premium!");
-    setTimeout(() => setIsCelebrating(false), 5000);
+    try {
+      setLoading(true);
+      await authClient.checkout({
+        slug: "pro-access",
+      });
+    } catch (error) {
+      console.error("Purchase error:", error);
+      showToast("Failed to start checkout.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancelSubscription = async () => {
@@ -198,9 +204,10 @@ export default function PricingPage() {
                     ) : (
                         <button 
                             onClick={handleBuy}
-                            className="w-full py-5 bg-black dark:bg-white text-white dark:text-black rounded-[24px] font-bold text-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all shadow-xl active:scale-95 mb-6 flex items-center justify-center gap-2"
+                            disabled={loading}
+                            className="w-full py-5 bg-black dark:bg-white text-white dark:text-black rounded-[24px] font-bold text-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all shadow-xl active:scale-95 mb-6 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Buy Now <ArrowRight size={20} />
+                            {loading ? "Processing..." : <>Buy Now <ArrowRight size={20} /></>}
                         </button>
                     )}
 

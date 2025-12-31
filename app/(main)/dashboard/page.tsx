@@ -454,7 +454,7 @@ export default function DashboardPage() {
 
       {/* Panel B: Main Feed */}
       <div className="flex-1 flex flex-col w-full lg:h-full bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl rounded-[40px] shadow-depth-2 px-4 py-6 lg:px-8 lg:py-8 overflow-visible lg:overflow-hidden relative z-10 animate-in zoom-in-95 duration-500 border border-white/50 dark:border-white/5">
-        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 z-10 relative gap-4">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 z-10 relative gap-4 flex-wrap">
             <div className="flex flex-col">
               <h1 className="text-3xl lg:text-4xl font-display font-bold text-gray-900 dark:text-zinc-200 tracking-tighter">
                   {format(currentDate, 'MMMM yyyy')}

@@ -320,6 +320,37 @@ export async function createSubscription(subData: Partial<SubType>) {
   };
 }
 
+// --- Polar Verification ---
+import { polarWrapperApi } from "@/lib/polar";
+
+export async function verifyPurchase(checkoutId: string) {
+  const sessionUser = await getSessionUser();
+  if (!sessionUser) return { success: false, error: "Unauthorized" };
+
+  try {
+    const checkout = await polarWrapperApi.checkouts.get({
+        id: checkoutId
+    });
+
+    if (checkout.status === 'succeeded' || checkout.status === 'confirmed') {
+        // Update user status
+        await auth.api.updateUser({
+            headers: await headers(),
+            body: {
+                isUpgraded: true
+            }
+        });
+        return { success: true };
+    }
+
+    return { success: false, error: "Payment not verified" };
+
+  } catch (error) {
+    console.error("Verification failed:", error);
+    return { success: false, error: "Verification failed" };
+  }
+}
+
 export async function deleteSubscription(subId: string) {
   const sessionUser = await getSessionUser();
   if (!sessionUser?.id) throw new Error("Unauthorized");
