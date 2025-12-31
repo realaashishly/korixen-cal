@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { CheckCircle, ArrowRight, Loader2, XCircle } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { verifyPurchase } from '../actions';
 import Link from 'next/link';
 
-export default function SuccessPage() {
+function SuccessContent() {
   const searchParams = useSearchParams();
   const checkoutId = searchParams.get('checkout_id');
   
@@ -84,5 +84,17 @@ export default function SuccessPage() {
         Questions? Contact support@korizen.com
       </p>
     </div>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={
+        <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center">
+            <Loader2 className="animate-spin text-gray-400" />
+        </div>
+    }>
+        <SuccessContent />
+    </Suspense>
   );
 }
