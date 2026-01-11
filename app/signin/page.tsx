@@ -161,7 +161,7 @@ const SignupPage: React.FC = () => {
         </form>
         
         <p className="text-center mt-6 text-xs text-gray-400">
-          Already have an account? <Link href="/signin" className="text-black dark:text-white font-bold cursor-pointer hover:underline">Sign in</Link>
+          Already have an account? <Link href="/signup" className="text-black dark:text-white font-bold cursor-pointer hover:underline">Sign up</Link>
         </p>
       </div>
     </div>
