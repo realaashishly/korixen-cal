@@ -609,7 +609,6 @@ export default function AppProvider({
         handleDeleteEvent,
         handleCreateSubscription,
         handleDeleteSubscription,
-        handleDeleteSubscription,
         handleUpdateResourceCategories,
         handleUpdateDepartments,
         handleUpdateEventTypes,
