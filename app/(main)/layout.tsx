@@ -32,7 +32,7 @@ export default function MainLayout({
 
   return (
     <div className={`transition-colors duration-300 ease-in-out ${isDarkMode ? 'dark' : ''}`}>
-      <div className="flex flex-col lg:flex-row min-h-screen w-full bg-[#FAFAFA] dark:bg-zinc-950 bg-dot-pattern lg:overflow-hidden text-[#09090b] dark:text-zinc-200 font-sans selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-500">
+      <div className="flex flex-col lg:flex-row h-screen w-full bg-[#FAFAFA] dark:bg-zinc-950 bg-dot-pattern overflow-hidden text-[#09090b] dark:text-zinc-200 font-sans selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-500">
         <div className="bg-noise opacity-[0.03] dark:opacity-[0.05]"></div>
         
         {/* Celebration Confetti Overlay */}
@@ -81,12 +81,12 @@ export default function MainLayout({
         <Sidebar />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col lg:flex-row gap-6 p-4 lg:p-6 w-full lg:h-full overflow-visible lg:overflow-hidden relative z-10 pb-28 lg:pb-6">
+        <div className="flex-1 flex flex-col lg:flex-row gap-6 p-4 lg:p-6 w-full h-full overflow-hidden relative z-10 pb-20 lg:pb-6">
             {children}
-            <RightSidebar />
+            <div className="hidden lg:block h-full">
+              <RightSidebar />
+            </div>
         </div>
-
-        <MobileNav />
 
         <MobileNav />
       </div>

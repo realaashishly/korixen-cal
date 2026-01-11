@@ -5,10 +5,13 @@ import { CreditCard } from 'lucide-react';
 import SubscriptionTracker from '@/components/SubscriptionTracker';
 import { getSubscriptions, createSubscription, deleteSubscription } from '@/app/actions';
 import { Subscription } from '@/types';
+import UpgradeModal from '@/components/UpgradeModal';
 
 export default function SubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState("");
 
   useEffect(() => {
     const fetchSubs = async () => {
@@ -43,10 +46,16 @@ export default function SubscriptionsPage() {
 
       // Update with real ID from server
       setSubscriptions(prev => prev.map(s => s.id === sub.id ? { ...s, id: newSub.id } : s));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create subscription", error);
       // Revert on failure
       setSubscriptions(prev => prev.filter(s => s.id !== sub.id));
+      
+      // Check for limit error
+      if (error.message?.includes("Free plan limit reached") || error.message?.includes("Upgrade")) {
+        setUpgradeMessage(error.message);
+        setIsUpgradeModalOpen(true);
+      }
     }
   };
 
@@ -97,6 +106,12 @@ export default function SubscriptionsPage() {
             isLoading={loading}
         />
       </div>
+
+      <UpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onClose={() => setIsUpgradeModalOpen(false)} 
+        message={upgradeMessage}
+      />
     </>
   );
 }

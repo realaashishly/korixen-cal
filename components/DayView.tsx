@@ -116,7 +116,7 @@ const DayView: React.FC<DayViewProps> = ({
   };
 
   return (
-    <div className="h-auto lg:h-full overflow-visible lg:overflow-y-auto hide-scrollbar pb-20 px-1">
+    <div className="flex-1 min-h-0 overflow-y-auto pb-32 px-1 custom-scrollbar">
       <div className="space-y-12">
         {daysToShow.map((dayDate) => {
           const dayEvents = events.filter(e => isSameDay(e.startTime, dayDate));

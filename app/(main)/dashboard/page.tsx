@@ -22,9 +22,10 @@ import WeekView from '@/components/WeekView';
 import KanbanView from '@/components/KanbanView';
 import EventModal from '@/components/EventModal';
 import { getColorForString, TaskStatus, CalendarEvent, CalendarViewMode, Department } from '@/types';
-import { getEvents, createEvent, updateEvent, deleteEvent, getUserAssets } from '@/app/actions';
-import {DEFAULT_DEPARTMENTS, DEFAULT_EVENT_TYPES, DEFAULT_RESOURCE_CATEGORIES} from '@/constants'
+import { getEvents, createEvent, updateEvent, deleteEvent } from '@/app/actions';
+import { useApp } from '@/context/AppContext';
 import { authClient } from '@/lib/auth-client';
+import UpgradeModal from '@/components/UpgradeModal';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -34,9 +35,14 @@ export default function DashboardPage() {
   const user = session?.user;
   const userName = user?.name;
 
-  const [departments, setDepartments] = useState<string[]>(DEFAULT_DEPARTMENTS);
-  const [eventTypes, setEventTypes] = useState<string[]>(DEFAULT_EVENT_TYPES);
-  const [resourceCategories, setResourceCategories] = useState<string[]>(DEFAULT_RESOURCE_CATEGORIES);
+  const { 
+    departments, 
+    eventTypes, 
+    resourceCategories,
+    handleUpdateDepartments,
+    handleUpdateEventTypes,
+    handleUpdateResourceCategories 
+  } = useApp();
 
 
   // --- Local State ---
@@ -54,6 +60,8 @@ export default function DashboardPage() {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<TaskStatus | "all">("all");
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState("");
 
   // Holidays
   const [holidays, setHolidays] = useState<string[]>([]);
@@ -61,7 +69,7 @@ export default function DashboardPage() {
   // Simple cache for now
   const holidayCache = useRef<Map<string, string[]>>(new Map());
 
-  // --- Computed ---
+  // ... (rest of computed) ...
   const daysLeftInYear = differenceInDays(endOfYear(new Date()), new Date());
   const weeksLeft = differenceInWeeks(endOfYear(new Date()), new Date());
   const yearProgress = Math.round(((365 - daysLeftInYear) / 365) * 100);
@@ -73,6 +81,8 @@ export default function DashboardPage() {
       selectedStatusFilter === "all" || event.status === selectedStatusFilter;
     return matchesRole && matchesStatus;
   });
+
+  // ...
 
   // --- Effects ---
   
@@ -193,7 +203,9 @@ export default function DashboardPage() {
           await handleUpdateEvent(updatedEvent);
       } else {
           // Create new
-          // Optimistic
+          // Dont make optimistic update immediately if we want to catch error first?
+          // Actually user experience: Optimistic is better, then revert.
+          
           const tempId = Math.random().toString(36).substr(2, 9);
           const newEvent: CalendarEvent = {
             id: tempId,
@@ -207,24 +219,36 @@ export default function DashboardPage() {
             ...eventData,
           } as CalendarEvent;
 
+          // Optimistically add to UI
           updateEvents([...events, newEvent]);
-          setIsModalOpen(false);
+          setIsModalOpen(false); // Close modal immediately
 
-          const savedEvent = await createEvent({
-            ...newEvent,
-            startTime: newEvent.startTime,
-            endTime: newEvent.endTime
-          });
-
-          // Replace temp ID
-          setEvents(prev => prev.map(e => e.id === tempId ? { ...e, id: savedEvent.id } : e));
+          try {
+             const savedEvent = await createEvent({
+                ...newEvent,
+                startTime: newEvent.startTime,
+                endTime: newEvent.endTime
+             });
+             
+             // Replace temp ID
+             setEvents(prev => prev.map(e => e.id === tempId ? { ...e, id: savedEvent.id } : e));
+          } catch (error: any) {
+             console.error("Failed to create event", error);
+             // Revert optimistic update
+             setEvents(prev => prev.filter(e => e.id !== tempId));
+             
+             // Check for limit error
+             if (error.message?.includes("Free plan limit reached") || error.message?.includes("Upgrade")) {
+                setUpgradeMessage(error.message);
+                setIsUpgradeModalOpen(true);
+             }
+          }
       }
       setIsModalOpen(false);
       setEditingEvent(null);
 
     } catch (error) {
       console.error("Failed to save event", error);
-      // Revert?
     }
   };
 
@@ -453,7 +477,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Panel B: Main Feed */}
-      <div className="flex-1 flex flex-col w-full lg:h-full bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl rounded-[40px] shadow-depth-2 px-4 py-6 lg:px-8 lg:py-8 overflow-visible lg:overflow-hidden relative z-10 animate-in zoom-in-95 duration-500 border border-white/50 dark:border-white/5">
+      <div className="flex-1 flex flex-col w-full h-full bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl rounded-[40px] shadow-depth-2 px-4 py-6 lg:px-8 lg:py-8 overflow-hidden relative z-10 animate-in zoom-in-95 duration-500 border border-white/50 dark:border-white/5">
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 z-10 relative gap-4 flex-wrap">
             <div className="flex flex-col">
               <h1 className="text-3xl lg:text-4xl font-display font-bold text-gray-900 dark:text-zinc-200 tracking-tighter">
@@ -580,10 +604,16 @@ export default function DashboardPage() {
         departments={departments}
         eventTypes={eventTypes}
         resourceCategories={resourceCategories}
-        setDepartments={setDepartments}
-        setEventTypes={setEventTypes}
-        setResourceCategories={setResourceCategories}
+        setDepartments={handleUpdateDepartments}
+        setEventTypes={handleUpdateEventTypes}
+        setResourceCategories={handleUpdateResourceCategories}
         event={editingEvent}
+      />
+
+      <UpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        message={upgradeMessage}
       />
     </>
   );

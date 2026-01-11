@@ -117,7 +117,17 @@ export async function updateUserAssets(data: {
   await dbConnect();
 
   const updateData: any = {};
-  if (data.resources) updateData.resources = data.resources;
+  if (data.resources) {
+    // Check limit for free users
+    const user = await User.findById(userId).lean();
+    if (!user) throw new Error("User not found");
+    
+    if (!user.isUpgraded && data.resources.length > 5) {
+      throw new Error("Free plan limit reached. Upgrade to add more resources.");
+    }
+    
+    updateData.resources = data.resources;
+  }
   if (data.departments) updateData.departments = data.departments;
   if (data.eventTypes) updateData.eventTypes = data.eventTypes;
   if (data.resourceCategories)

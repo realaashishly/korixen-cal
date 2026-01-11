@@ -11,9 +11,9 @@ interface EventModalProps {
   departments: string[];
   eventTypes: string[];
   resourceCategories: string[];
-  setDepartments: React.Dispatch<React.SetStateAction<string[]>>;
-  setEventTypes: React.Dispatch<React.SetStateAction<string[]>>;
-  setResourceCategories: React.Dispatch<React.SetStateAction<string[]>>;
+  setDepartments: (departments: string[]) => void;
+  setEventTypes: (types: string[]) => void;
+  setResourceCategories: (categories: string[]) => void;
   event?: any; // CalendarEvent - Using any to avoid circular deps or complex type import for now
 }
 
@@ -125,7 +125,7 @@ const EventModal: React.FC<EventModalProps> = ({
   // CRUD Helpers
   const addItem = (
     list: string[], 
-    setList: React.Dispatch<React.SetStateAction<string[]>>,
+    setList: (list: string[]) => void,
     currentSelection: string,
     setSelection: (val: string) => void
   ) => {
@@ -140,7 +140,7 @@ const EventModal: React.FC<EventModalProps> = ({
   const deleteItem = (
     item: string,
     list: string[],
-    setList: React.Dispatch<React.SetStateAction<string[]>>,
+    setList: (list: string[]) => void,
     currentSelection: string,
     setSelection: (val: string) => void
   ) => {

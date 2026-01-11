@@ -27,6 +27,7 @@ import {
   UserRole,
 } from "@/types";
 import { usePathname, useRouter } from "next/navigation";
+import UpgradeModal from "@/components/UpgradeModal";
 import React, {
   ReactNode,
   useEffect,
@@ -68,6 +69,8 @@ export interface AppContextType {
   handleCreateSubscription: (sub: Partial<Subscription>) => Promise<void>;
   handleDeleteSubscription: (id: string) => Promise<void>;
   handleUpdateResourceCategories: (categories: string[]) => Promise<void>;
+  handleUpdateDepartments: (departments: string[]) => Promise<void>;
+  handleUpdateEventTypes: (types: string[]) => Promise<void>;
 
   isModalOpen: boolean;
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -333,6 +336,8 @@ export default function AppProvider({
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState("");
 
   // --- Initialization ---
 
@@ -447,9 +452,21 @@ export default function AppProvider({
     const newResources = [item, ...resources];
     setResources(newResources);
     
-    // Update DB
-    await updateUserAssets({ resources: newResources });
-    showToast("Resource added");
+    try {
+      // Update DB
+      await updateUserAssets({ resources: newResources });
+      showToast("Resource added");
+    } catch (error: any) {
+      console.error("Failed to add resource", error);
+      // Revert
+      setResources(resources);
+      if (error.message?.includes("Free plan limit reached") || error.message?.includes("Upgrade")) {
+        setUpgradeMessage(error.message);
+        setIsUpgradeModalOpen(true);
+      } else {
+        showToast("Failed to add resource");
+      }
+    }
   };
 
   const handleRemoveResource = async (id: string) => {
@@ -534,6 +551,26 @@ export default function AppProvider({
       }
   };
 
+  const handleUpdateDepartments = async (newDepartments: string[]) => {
+      setDepartments(newDepartments); // Optimistic
+      try {
+          await updateUserAssets({ departments: newDepartments });
+      } catch (err) {
+          console.error(err);
+          showToast("Failed to save departments");
+      }
+  };
+
+  const handleUpdateEventTypes = async (newTypes: string[]) => {
+      setEventTypes(newTypes); // Optimistic
+      try {
+          await updateUserAssets({ eventTypes: newTypes });
+      } catch (err) {
+          console.error(err);
+          showToast("Failed to save event types");
+      }
+  };
+
   if (appState === "auth" && pathname !== "/signup" && pathname !== "/signin") {
     return null;
   }
@@ -572,7 +609,10 @@ export default function AppProvider({
         handleDeleteEvent,
         handleCreateSubscription,
         handleDeleteSubscription,
+        handleDeleteSubscription,
         handleUpdateResourceCategories,
+        handleUpdateDepartments,
+        handleUpdateEventTypes,
       }}
     >
       {appState === "loading" && (
@@ -585,6 +625,12 @@ export default function AppProvider({
           </div>
         </div>
       )}
+
+      <UpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onClose={() => setIsUpgradeModalOpen(false)} 
+        message={upgradeMessage}
+      />
 
       {children}
     </AppContextContext.Provider>
