@@ -205,6 +205,18 @@ export async function createEvent(eventData: Partial<CalendarEvent>) {
 
   await dbConnect();
   
+  // Check event limits for free users
+  // Re-fetch user to get latest isUpgraded status
+  const user = await User.findById(sessionUser.id).lean();
+  if (!user) throw new Error("User not found");
+
+  if (!user.isUpgraded) {
+    const eventCount = await Event.countDocuments({ userId: sessionUser.id });
+    if (eventCount >= 10) {
+      throw new Error("Free plan limit reached. Upgrade to add more events.");
+    }
+  }
+  
   // Directly use sessionUser.id
   const newEvent = await Event.create({
     userId: sessionUser.id,
@@ -300,6 +312,18 @@ export async function createSubscription(subData: Partial<SubType>) {
   if (!sessionUser?.id) throw new Error("Unauthorized");
 
   await dbConnect();
+
+  // Check subscription limits for free users
+  // Re-fetch user to get latest isUpgraded status
+  const user = await User.findById(sessionUser.id).lean();
+  if (!user) throw new Error("User not found");
+
+  if (!user.isUpgraded) {
+    const subCount = await Subscription.countDocuments({ userId: sessionUser.id });
+    if (subCount >= 5) {
+      throw new Error("Free plan limit reached. Upgrade to add more subscriptions.");
+    }
+  }
 
   const newSub = await Subscription.create({
     userId: sessionUser.id,
